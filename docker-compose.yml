@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+  dashboard:
+    build: ./frontend
+    container_name: botcraft_dashboard
+    restart: always
+
+  api:
+    build: ./backend
+    container_name: botcraft_api
+    restart: always
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/botcraft
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mongo:
+    image: mongo:6
+    container_name: botcraft_mongo
+    restart: always
+    volumes:
+      - ./data:/data/db
+
+  nginx:
+    image: nginx:latest
+    container_name: botcraft_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/letsencrypt

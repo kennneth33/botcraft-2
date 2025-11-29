@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bot Command Builder</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 2px solid #34495e;
+    }
+
+    .sidebar h3 {
+      margin-bottom: 15px;
+      font-size: 14px;
+      text-transform: uppercase;
+      color: #ecf0f1;
+    }
+
+    .block-palette {
+      margin-bottom: 30px;
+    }
+
+    .block-item {
+      background: #34495e;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      cursor: grab;
+      user-select: none;
+      transition: background 0.2s;
+      font-size: 13px;
+      border-left: 3px solid #3498db;
+    }
+
+    .block-item:hover {
+      background: #3d5268;
+    }
+
+    .block-item.event {
+      border-left-color: #e74c3c;
+    }
+
+    .block-item.logic {
+      border-left-color: #f39c12;
+    }
+
+    .block-item.action {
+      border-left-color: #27ae60;
+    }
+
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      background: white;
+      padding: 15px 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2980b9;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #229954;
+    }
+
+    .btn-danger {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c0392b;
+    }
+
+    .canvas {
+      flex: 1;
+      background: linear-gradient(135deg, #ecf0f1 25%, transparent 25%, transparent 75%, #ecf0f1 75%, #ecf0f1),
+                  linear-gradient(135deg, #ecf0f1 25%, transparent 25%, transparent 75%, #ecf0f1 75%, #ecf0f1);
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
+      background-color: #fafafa;
+      padding: 20px;
+      overflow: auto;
+      position: relative;
+    }
+
+    .block {
+      position: absolute;
+      background: white;
+      border: 2px solid #3498db;
+      border-radius: 6px;
+      padding: 12px;
+      min-width: 150px;
+      cursor: move;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      user-select: none;
+    }
+
+    .block.selected {
+      border-color: #e74c3c;
+      box-shadow: 0 2px 12px rgba(231, 76, 60, 0.3);
+    }
+
+    .block.event {
+      border-color: #e74c3c;
+      background: #ffe6e6;
+    }
+
+    .block.logic {
+      border-color: #f39c12;
+      background: #fff5e6;
+    }
+
+    .block.action {
+      border-color: #27ae60;
+      background: #e6f7e6;
+    }
+
+    .block-header {
+      font-weight: bold;
+      font-size: 12px;
+      color: #2c3e50;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .block-type {
+      font-size: 10px;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .block-remove {
+      background: none;
+      border: none;
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    .block-remove:hover {
+      color: #c0392b;
+    }
+
+    .block-content {
+      font-size: 13px;
+      color: #555;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 3px;
+      margin-bottom: 8px;
+      min-height: 20px;
+      cursor: text;
+      word-break: break-word;
+    }
+
+    .block-content:hover {
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .connection-line {
+      position: absolute;
+      stroke: #95a5a6;
+      stroke-width: 2;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .properties-panel {
+      width: 250px;
+      background: white;
+      border-left: 1px solid #ddd;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .properties-panel h3 {
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+
+    .property-group {
+      margin-bottom: 20px;
+    }
+
+    .property-label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 4px rgba(52, 152, 219, 0.3);
+    }
+
+    .json-export {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+
+    .json-export textarea {
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar with block palette -->
+  <div class="sidebar">
+    <div class="block-palette">
+      <h3>Events</h3>
+      <div class="block-item event" draggable="true" data-type="event" data-name="Message">📝 Message Received</div>
+      <div class="block-item event" draggable="true" data-type="event" data-name="Reaction">😊 Reaction Added</div>
+      <div class="block-item event" draggable="true" data-type="event" data-name="Join">👤 Member Joined</div>
+      <div class="block-item event" draggable="true" data-type="event" data-name="Command">⚡ Command Triggered</div>
+    </div>
+
+    <div class="block-palette">
+      <h3>Logic</h3>
+      <div class="block-item logic" draggable="true" data-type="logic" data-name="If/Then">🔀 If/Then</div>
+      <div class="block-item logic" draggable="true" data-type="logic" data-name="Loop">🔄 Loop</div>
+      <div class="block-item logic" draggable="true" data-type="logic" data-name="Delay">⏱️ Delay</div>
+    </div>
+
+    <div class="block-palette">
+      <h3>Actions</h3>
+      <div class="block-item action" draggable="true" data-type="action" data-name="Send Message">💬 Send Message</div>
+      <div class="block-item action" draggable="true" data-type="action" data-name="Delete Message">🗑️ Delete Message</div>
+      <div class="block-item action" draggable="true" data-type="action" data-name="Add Role">🏷️ Add Role</div>
+      <div class="block-item action" draggable="true" data-type="action" data-name="Remove Role">🏷️ Remove Role</div>
+      <div class="block-item action" draggable="true" data-type="action" data-name="Ban User">🚫 Ban User</div>
+    </div>
+  </div>
+
+  <!-- Main Canvas Area -->
+  <div class="canvas-area">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="saveBlocks()">💾 Save</button>
+      <button class="btn btn-success" onclick="exportJSON()">📤 Export JSON</button>
+      <button class="btn btn-danger" onclick="clearCanvas()">🗑️ Clear All</button>
+      <span style="margin-left: auto; color: #666; font-size: 13px;">Right-click to delete blocks</span>
+    </div>
+
+    <div class="canvas" id="canvas"></div>
+  </div>
+
+  <!-- Properties Panel -->
+  <div class="properties-panel">
+    <h3>Properties</h3>
+    <div id="properties-content">
+      <p style="color: #999; font-size: 13px;">Select a block to edit properties</p>
+    </div>
+  </div>
+
+  <script>
+    let blocks = [];
+    let nextId = 1;
+    let selectedBlock = null;
+
+    const canvas = document.getElementById('canvas');
+    const sidebar = document.querySelector('.sidebar');
+
+    // Drag and drop from palette
+    sidebar.addEventListener('dragstart', (e) => {
+      if (e.target.classList.contains('block-item')) {
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('type', e.target.dataset.type);
+        e.dataTransfer.setData('name', e.target.dataset.name);
+      }
+    });
+
+    canvas.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      canvas.style.background = 'rgba(52, 152, 219, 0.1), linear-gradient(135deg, #ecf0f1 25%, transparent 25%), linear-gradient(135deg, #ecf0f1 25%, transparent 25%)';
+    });
+
+    canvas.addEventListener('dragleave', (e) => {
+      if (e.target === canvas) {
+        canvas.style.background = 'linear-gradient(135deg, #ecf0f1 25%, transparent 25%, transparent 75%, #ecf0f1 75%, #ecf0f1), linear-gradient(135deg, #ecf0f1 25%, transparent 25%, transparent 75%, #ecf0f1 75%, #ecf0f1)';
+      }
+    });
+
+    canvas.addEventListener('drop', (e) => {
+      e.preventDefault();
+      canvas.style.background = 'linear-gradient(135deg, #ecf0f1 25%, transparent 25%, transparent 75%, #ecf0f1 75%, #ecf0f1), linear-gradient(135deg, #ecf0f1 25%, transparent 25%, transparent 75%, #ecf0f1 75%, #ecf0f1)';
+
+      const type = e.dataTransfer.getData('type');
+      const name = e.dataTransfer.getData('name');
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      createBlock(type, name, x, y);
+    });
+
+    function createBlock(type, name, x, y) {
+      const id = nextId++;
+      const block = {
+        id,
+        type,
+        name,
+        x: Math.max(0, x - 75),
+        y: Math.max(0, y - 25),
+        config: {}
+      };
+
+      blocks.push(block);
+      renderBlock(block);
+    }
+
+    function renderBlock(block) {
+      const el = document.createElement('div');
+      el.className = `block ${block.type}`;
+      el.dataset.id = block.id;
+      el.style.left = block.x + 'px';
+      el.style.top = block.y + 'px';
+
+      el.innerHTML = `
+        <div class="block-header">
+          <span>${block.name}</span>
+          <button class="block-remove" onclick="deleteBlock(${block.id})">&times;</button>
+        </div>
+        <div class="block-content" onclick="editBlock(${block.id})">${block.config.label || 'Click to configure'}</div>
+      `;
+
+      el.addEventListener('click', () => selectBlock(block.id));
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        deleteBlock(block.id);
+      });
+
+      makeDraggable(el, block);
+      canvas.appendChild(el);
+    }
+
+    function makeDraggable(el, block) {
+      let isDragging = false;
+      let startX, startY, offsetX, offsetY;
+
+      el.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('block-remove') || e.target.classList.contains('block-content')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        offsetX = el.offsetLeft;
+        offsetY = el.offsetTop;
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          block.x = offsetX + (e.clientX - startX);
+          block.y = offsetY + (e.clientY - startY);
+          el.style.left = block.x + 'px';
+          el.style.top = block.y + 'px';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    }
+
+    function selectBlock(id) {
+      if (selectedBlock !== null) {
+        const prev = document.querySelector(`[data-id="${selectedBlock}"]`);
+        if (prev) prev.classList.remove('selected');
+      }
+
+      selectedBlock = id;
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) el.classList.add('selected');
+
+      showProperties(id);
+    }
+
+    function showProperties(id) {
+      const block = blocks.find(b => b.id === id);
+      if (!block) return;
+
+      const panel = document.getElementById('properties-content');
+      panel.innerHTML = `
+        <div class="property-group">
+          <label class="property-label">Block Name</label>
+          <input type="text" value="${block.name}" onchange="updateBlock(${id}, 'name', this.value)">
+        </div>
+
+        <div class="property-group">
+          <label class="property-label">Label/Description</label>
+          <textarea onchange="updateBlock(${id}, 'label', this.value)">${block.config.label || ''}</textarea>
+        </div>
+
+        <div class="property-group">
+          <label class="property-label">Type</label>
+          <select onchange="updateBlock(${id}, 'blockType', this.value)">
+            <option value="">Select type</option>
+            <option value="command">Command</option>
+            <option value="message">Message</option>
+            <option value="reaction">Reaction</option>
+            <option value="trigger">Trigger</option>
+          </select>
+        </div>
+
+        <div class="property-group">
+          <label class="property-label">Config (JSON)</label>
+          <textarea id="config-json" onchange="updateBlock(${id}, 'config', JSON.parse(this.value))">${JSON.stringify(block.config, null, 2)}</textarea>
+        </div>
+
+        <button class="btn btn-danger" onclick="deleteBlock(${id})">Delete Block</button>
+      `;
+    }
+
+    function updateBlock(id, key, value) {
+      const block = blocks.find(b => b.id === id);
+      if (!block) return;
+
+      if (key === 'config' && typeof value === 'object') {
+        block.config = value;
+      } else if (key === 'label') {
+        block.config.label = value;
+      } else if (key === 'name') {
+        block.name = value;
+      } else if (key === 'blockType') {
+        block.config.blockType = value;
+      }
+
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) {
+        el.querySelector('.block-content').textContent = block.config.label || 'Click to configure';
+      }
+    }
+
+    function deleteBlock(id) {
+      blocks = blocks.filter(b => b.id !== id);
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (el) el.remove();
+      if (selectedBlock === id) {
+        selectedBlock = null;
+        document.getElementById('properties-content').innerHTML = '<p style="color: #999; font-size: 13px;">Select a block to edit properties</p>';
+      }
+    }
+
+    function editBlock(id) {
+      selectBlock(id);
+    }
+
+    function saveBlocks() {
+      localStorage.setItem('botcraft-blocks', JSON.stringify(blocks));
+      alert('Blocks saved locally!');
+    }
+
+    function exportJSON() {
+      const json = JSON.stringify(blocks, null, 2);
+      const el = document.createElement('textarea');
+      el.value = json;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      alert('JSON copied to clipboard!');
+    }
+
+    function clearCanvas() {
+      if (confirm('Clear all blocks?')) {
+        blocks = [];
+        selectedBlock = null;
+        canvas.innerHTML = '';
+        document.getElementById('properties-content').innerHTML = '<p style="color: #999; font-size: 13px;">Select a block to edit properties</p>';
+      }
+    }
+
+    // Load blocks from localStorage on startup
+    window.addEventListener('load', () => {
+      const saved = localStorage.getItem('botcraft-blocks');
+      if (saved) {
+        blocks = JSON.parse(saved);
+        nextId = (blocks.length > 0 ? Math.max(...blocks.map(b => b.id)) : 0) + 1;
+        blocks.forEach(renderBlock);
+      }
+    });
+  </script>
+</body>
+</html>

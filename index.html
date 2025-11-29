@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Discord Bot Host</title>
+</head>
+<body>
+  <h1>Start Your Discord Bot</h1>
+  <input id="token" type="text" placeholder="Enter bot token" />
+  <button onclick="startBot()">Start Bot</button>
+  <button onclick="stopBot()">Stop Bot</button>
+  <p>
+    <a id="oauth-add" href="https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Fbotcraft.dev%2Fcallback&response_type=code&scope=bot%20applications.commands%20identify%20guilds&permissions=8">
+      Add Bot to Server
+    </a>
+  </p>
+  <p>
+    <a href="/builder.html" style="display: inline-block; margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; text-decoration: none; border-radius: 4px;">
+      🔧 Command Builder
+    </a>
+  </p>
+
+  <script>
+    async function startBot() {
+      const token = document.getElementById("token").value;
+      const res = await fetch("/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      alert(await res.text());
+    }
+
+    async function stopBot() {
+      const token = document.getElementById("token").value;
+      const res = await fetch("/stop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      alert(await res.text());
+    }
+  </script>
+</body>
+</html>
